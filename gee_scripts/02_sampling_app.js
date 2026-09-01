@@ -16,11 +16,13 @@
 // ============================================================
 // 'dev' uses the dummyData below instead of hitting the Cloud Function -
 // useful for testing the UI without a live backend. Switch to 'live' once
-// GEE_ASSET_PREFIX and CLOUD_FUNCTION_URL below point at your own resources.
+// GEE_ASSET_ROOT and CLOUD_FUNCTION_URL below point at your own resources.
 var MODE = 'dev';
 
-// Prefix for your own GEE assets, matching gee_scripts/01_stratified_pixel_sampling.js.
-var GEE_ASSET_PREFIX = 'projects/YOUR_GEE_PROJECT/';
+// GEE asset root - see the CONFIG comment in gee_scripts/01_stratified_pixel_sampling.js
+// (matches gee_project.asset_root in config/catalog.yaml). NOT necessarily the same as
+// the GCP project you sign in with for Earth Engine.
+var GEE_ASSET_ROOT = 'projects/YOUR_GEE_ASSET_ROOT/';
 
 // Trigger URL of your deployed cloud_function/main.py (see cloud_function/README.md).
 var CLOUD_FUNCTION_URL = 'https://REGION-YOUR_GCP_PROJECT.cloudfunctions.net/zsv_data_store';
@@ -82,7 +84,7 @@ function fetchData(key, sheetcols, data, callback) {
 }
 
 
-var grassland2021 = ee.ImageCollection(GEE_ASSET_PREFIX + 'Europe_misc/CLMS_HRLVLCC_GRAME_S2021_R10m');
+var grassland2021 = ee.ImageCollection(GEE_ASSET_ROOT + 'Europe_misc/CLMS_HRLVLCC_GRAME_S2021_R10m');
 var grame_proj = ee.Projection({
   "crs": "EPSG:3035",
   "transform": [
@@ -95,7 +97,7 @@ var grame_proj = ee.Projection({
   ]
 })
 
-var planetScope = ee.ImageCollection(GEE_ASSET_PREFIX + "PlanetScope/Europe_2kmGridSample_ortho_analytic_8b_sr"),
+var planetScope = ee.ImageCollection(GEE_ASSET_ROOT + "PlanetScope/Europe_2kmGridSample_ortho_analytic_8b_sr"),
     geometry = /* color: #98ff00 */ee.Feature(
         ee.Geometry.Point([9.301772968679005, 51.630294691295454]),
         {
@@ -145,7 +147,7 @@ var FILMSTRIP_HALF_WINDOW = 3;
 //
 
 var samples = ee.FeatureCollection([geometry, geometry2]).toList(10000);
-var samples = ee.FeatureCollection(GEE_ASSET_PREFIX + 'modcix_sample_pts_v2')
+var samples = ee.FeatureCollection(GEE_ASSET_ROOT + 'modcix_sample_pts_v2')
   .filter(ee.Filter.neq('stratum', 255));
 print(ui.Chart.feature.histogram(samples, 'stratum'))
 
@@ -160,8 +162,8 @@ Export.table.toDrive({
 //samples = samples.filter(ee.Filter.inList('PLOTID', ['a14-42357011838088_47-44001449453533']))
 //samples = samples.toList(10000);
 
-var ndviTs = ee.FeatureCollection(GEE_ASSET_PREFIX + 'modcix_planetscope_ndvi_ts_v2')
-var ndviTs_s2 = ee.FeatureCollection(GEE_ASSET_PREFIX + 'modcix_s2_ndvi_ts_v2')
+var ndviTs = ee.FeatureCollection(GEE_ASSET_ROOT + 'modcix_planetscope_ndvi_ts_v2')
+var ndviTs_s2 = ee.FeatureCollection(GEE_ASSET_ROOT + 'modcix_s2_ndvi_ts_v2')
 
 //print(ndviTs_s2.distinct(['PLOTID']).reduceColumns(ee.Reducer.toList(), ['PLOTID']))
 

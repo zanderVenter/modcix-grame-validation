@@ -3,8 +3,12 @@
 # only ${VAR} references resolved at runtime by src/config.py.
 
 gee_project:
+    # GCP project used to authenticate (ee.Initialize, gcloud) and for GCS/Cloud Function billing.
     name: ${GEEPROJECT}
     bucket: ${GCLOUDBUCKET}
+    # GEE asset root (the projects/<root>/... prefix under which the pipeline's permanent
+    # assets live). NOT necessarily the same as `name` above - see README.md.
+    asset_root: ${GEEASSETROOT}
 
 planet_account:
     apikey: ${PLANETAPI}

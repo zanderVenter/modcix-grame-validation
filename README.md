@@ -64,8 +64,21 @@ technically possible:
   through `catalog[...]` instead.
 - **GEE Code Editor scripts (`gee_scripts/*.js`)**: GEE Apps run client-side with no
   environment-variable support, so each file has a `CONFIG` block of `var` constants
-  near the top (GEE asset prefix, Cloud Function URL, Sheet name, ...). Edit those
+  near the top (GEE asset root, Cloud Function URL, Sheet name, ...). Edit those
   before running/publishing your own copy - see the comments in each file.
+
+  **Two distinct GEE identifiers, both called "project" colloquially but not the
+  same thing:**
+  - `GEEPROJECT` (`gee_project.name` in `catalog.yaml`) - the **GCP project** used
+    to authenticate (`ee.Initialize()`, `gcloud`/`gsutil`), and as the delivery
+    target for Planet's GEE integration.
+  - `GEEASSETROOT` (`gee_project.asset_root` in `catalog.yaml`, `GEE_ASSET_ROOT` in
+    the JS files) - the **GEE asset root**, i.e. the `projects/<root>/...` prefix
+    the pipeline's permanent assets actually live under. For legacy
+    (pre-Cloud-projects) GEE assets - which is what this pipeline uses, under
+    `projects/nina/...` - this is just an asset namespace you have access to and is
+    unrelated to any GCP project's billing/auth. If you only use modern Cloud-native
+    assets these two can be the same value, but don't assume that.
 - **Cloud Function (`cloud_function/`)**: the sampling app's backend - the code that
   reads/writes the Google Sheet it stores data in - is hosted as a
   [GCP Cloud Function](https://console.cloud.google.com/functions/) on the

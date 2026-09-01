@@ -191,12 +191,19 @@ def main():
     parser.add_argument("--cloud-cover-max", type=float, default=0.3)
     parser.add_argument("--overlap-threshold", type=float, default=25.0, help="Minimum scene/grid-cell overlap percent to keep a scene")
     parser.add_argument("--staging-collection", default="test_planetscope", help="Temporary GEE collection Planet delivers into")
-    parser.add_argument("--target-collection", required=True, help="Final GEE asset path (relative), e.g. PlanetScope/my_collection")
+    parser.add_argument("--target-collection", required=True, help="Final GEE asset path, relative to your GEE asset root (config/catalog.yaml gee_project.asset_root), e.g. PlanetScope/my_collection")
     parser.add_argument("--poll-seconds", type=int, default=600, help="Seconds between order-status polls")
     args = parser.parse_args()
 
     catalog = load_catalog()
+    # GCP project: used to authenticate (ee.Initialize) and as the delivery target for
+    # Planet's GEE integration - this is the project you gcloud/earthengine-authenticate as.
     gcp_project = catalog["gee_project"]["name"]
+    # GEE asset root: the projects/<root>/... prefix under which the final, permanent
+    # assets live. For legacy (pre-Cloud-projects) GEE assets this is unrelated to the
+    # GCP project above - e.g. this pipeline's assets live under projects/nina/... even
+    # though ee.Initialize() authenticates against a different GCP project.
+    asset_root = catalog["gee_project"]["asset_root"]
     api_key = catalog["planet_account"]["apikey"]
 
     ee.Initialize(project=gcp_project)
@@ -209,8 +216,10 @@ def main():
     _, scene_features = search_planet_by_grid(grid_gdf, api_key, start_date, end_date, args.cloud_cover_max)
     high_quality_scenes = filter_by_overlap(scene_features, grid_gdf, args.overlap_threshold)
 
+    # Planet delivers into the staging collection under the GCP project (its GEE
+    # integration writes there directly); the final home is under the asset root.
     staging_path = f"projects/{gcp_project}/assets/{args.staging_collection}"
-    target_path = f"projects/earthengine-legacy/assets/projects/{gcp_project}/{args.target_collection}"
+    target_path = f"projects/earthengine-legacy/assets/projects/{asset_root}/{args.target_collection}"
 
     submitted = []
     for grid_id in high_quality_scenes["GRD_ID"].unique():

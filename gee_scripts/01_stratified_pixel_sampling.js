@@ -15,17 +15,22 @@
 // ============================================================
 // CONFIG - edit before running
 // ============================================================
-// Prefix for your own GEE assets, e.g. "projects/your-gee-project/assets/"
-var GEE_ASSET_PREFIX = 'projects/YOUR_GEE_PROJECT/';
+// GEE asset root: the projects/<root>/ prefix your permanent assets live
+// under. NOT necessarily the GCP project you sign in with for Earth Engine -
+// e.g. this pipeline's original assets live under projects/nina/, a legacy
+// asset namespace unrelated to any specific GCP project's billing/auth
+// (matches gee_project.asset_root in config/catalog.yaml, if you're keeping
+// this in sync with the Python side).
+var GEE_ASSET_ROOT = 'projects/YOUR_GEE_ASSET_ROOT/';
 
 // GRAME (Grassland Mowing Events) rasters ingested via
 // scripts/planetscope_to_gee_ingestion.py / the notebook's WEkEO section.
-var GRAME_2021_ASSET = GEE_ASSET_PREFIX + 'Europe_misc/CLMS_HRLVLCC_GRAME_S2021_R10m';
-var GRAME_2023_ASSET = GEE_ASSET_PREFIX + 'Europe_misc/CLMS_HRLVLCC_GRAME_S2023_R10m';
+var GRAME_2021_ASSET = GEE_ASSET_ROOT + 'Europe_misc/CLMS_HRLVLCC_GRAME_S2021_R10m';
+var GRAME_2023_ASSET = GEE_ASSET_ROOT + 'Europe_misc/CLMS_HRLVLCC_GRAME_S2023_R10m';
 
 // The 2x2km sample grid selected in the earlier simple-random-sample stage
 // (notebooks/01_sample_design_and_grame_ingestion.ipynb), uploaded as a GEE asset.
-var SAMPLE_GRID_ASSET = GEE_ASSET_PREFIX + 'modcix_planetscope_grid_samples_simp_rnd';
+var SAMPLE_GRID_ASSET = GEE_ASSET_ROOT + 'modcix_planetscope_grid_samples_simp_rnd';
 
 // Where to export the resulting stratified pixel sample.
 var OUTPUT_ASSET_ID = 'modcix_sample_pts_v2';
@@ -69,7 +74,7 @@ var stratSamples = getEqualAllocationStratifiedSample(stratImg, grid, 200, 10, p
 Export.table.toAsset({
   collection: stratSamples,
   description: OUTPUT_ASSET_ID,
-  assetId: GEE_ASSET_PREFIX + OUTPUT_ASSET_ID
+  assetId: GEE_ASSET_ROOT + OUTPUT_ASSET_ID
 });
 
 /**
