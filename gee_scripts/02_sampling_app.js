@@ -30,14 +30,16 @@ var CONTACT_EMAIL = 'your.email@example.com';
 
 // The name of the Google Sheet where the data is stored (used as the Cloud
 // Function's `name` query param, which finds-or-creates a sheet by this name
-// in the configured Drive folder - see cloud_function/main.py).
+// in the configured Drive folder - see cloud_function/main.py). Must start
+// with "public_" or the leaderboard/to-do-list fetches below will be denied
+// (cloud_function/main.py only allows &fetch= reads on "public_"-prefixed
+// sheets - see cloud_function/README.md).
 // Structure of that sheet (see cloud_function/README.md for setup):
 //   - "Sheet1": raw rows pushed from the app on each submission
 //   - "to_fetch": PLOTIDs with < 2 submissions in Sheet1 - the app pulls its
-//     to-do list of unprocessed sample points from here (not implemented
-//     server-side yet, see cloud_function/main.py's documented gap)
+//     to-do list of unprocessed sample points from here
 //   - "leaderboard": per-sampler submission counts, shown on the app's login screen
-var GOOGLESHEET = 'YOUR_SHEET_NAME';
+var GOOGLESHEET = 'public_YOUR_SHEET_NAME';
 // ============================================================
 
 

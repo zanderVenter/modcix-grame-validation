@@ -5,6 +5,12 @@ Code Editor apps run entirely client-side and cannot call the Google Sheets/Driv
 APIs directly, so the app POSTs/GETs to this HTTP Cloud Function, which reads and
 writes a Google Sheet on the app's behalf.
 
+It is a plain [GCP Cloud Function](https://console.cloud.google.com/functions/) -
+`main.py` + `requirements.txt`, no framework - deployed on the **Python 3.12**
+runtime (see the deploy command below). You manage it from the Cloud Console
+(Cloud Functions section) or via `gcloud functions ...` on the CLI; there's no
+other infrastructure involved.
+
 ## How it works
 
 - **Access control**: no API key. The function only accepts requests whose `Origin`
@@ -22,11 +28,14 @@ writes a Google Sheet on the app's behalf.
   Drive folder (`DRIVE_FOLDER_ID`). One sheet per `name` query param (the sampling
   app uses `GOOGLESHEET` from `gee_scripts/02_sampling_app.js` as this name); the
   function creates the sheet if it doesn't already exist.
-
-**Known gap:** the app also calls this endpoint with `&fetch=<a1-range>` to read
-back a leaderboard and a to-do list of unfinished sample points. That read branch
-is documented but *not implemented* in `main.py` - see the docstring there. Add it
-before relying on those app features against a fresh deployment.
+- **Reading data back**: `GET <url>?name=<sheet>&fetch=<a1-range>` returns
+  `{"success": true, "data": [[...], ...]}` for that range (`fetch=1`/`fetch=true`
+  is shorthand for all of `Sheet1`). Used by the app for the leaderboard and the
+  to-fetch/to-do list. **Only works if `<sheet>` already exists and its name starts
+  with `public_`** - this is a deliberate second access-control layer so a caller
+  can't read back an arbitrary sheet in the Drive folder, only ones you've named as
+  shareable. Make sure `GOOGLESHEET` in `gee_scripts/02_sampling_app.js` starts with
+  `public_` if you want the leaderboard/to-do-list features to work.
 
 ## Deploying your own copy
 

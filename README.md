@@ -66,9 +66,14 @@ technically possible:
   environment-variable support, so each file has a `CONFIG` block of `var` constants
   near the top (GEE asset prefix, Cloud Function URL, Sheet name, ...). Edit those
   before running/publishing your own copy - see the comments in each file.
-- **Cloud Function (`cloud_function/`)**: the Drive folder ID is read from the
-  `DRIVE_FOLDER_ID` environment variable set at `gcloud functions deploy` time - see
-  [`cloud_function/README.md`](cloud_function/README.md).
+- **Cloud Function (`cloud_function/`)**: the sampling app's backend - the code that
+  reads/writes the Google Sheet it stores data in - is hosted as a
+  [GCP Cloud Function](https://console.cloud.google.com/functions/) on the
+  **Python 3.12** runtime. It has no secrets in its source: the Drive folder ID is
+  read from the `DRIVE_FOLDER_ID` environment variable set at `gcloud functions
+  deploy` time, and access is controlled by request origin, not an API key. See
+  [`cloud_function/README.md`](cloud_function/README.md) for the full deploy
+  walkthrough.
 
 ## Running the pipeline
 
