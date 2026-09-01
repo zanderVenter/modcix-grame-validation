@@ -1,0 +1,20 @@
+name: modcix-grame-validation
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - duckdb
+  - geopandas
+  - pandas
+  - matplotlib
+  - shapely
+  - pyyaml
+  - requests
+  - jupyterlab
+  - pip
+  - pip:
+      - python-dotenv
+      - earthengine-api
+      - google-cloud-storage
+      - google-api-python-client
+      - hda

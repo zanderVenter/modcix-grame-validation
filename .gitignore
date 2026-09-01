@@ -1,0 +1,29 @@
+# secrets
+.env
+config/.env
+*.env
+!config/template.env
+credentials*.json
+service-account*.json
+*.key
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# data (kept on the NINA project drive, not in git)
+data/
+*.zip
+*.tif
+*.tiff
+*.gpkg
+*.duckdb
+
+# editor / tooling
+.vscode/
+.claude/
+.DS_Store
