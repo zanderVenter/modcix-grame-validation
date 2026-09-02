@@ -22,15 +22,12 @@ venv/
 
 # data (kept on the NINA project drive, not in git)
 data/
+output/
 *.zip
 *.tif
 *.tiff
 *.gpkg
 *.duckdb
-
-# analysis outputs - derived from raw sampler data (contains contributor
-# names / performance-like info), regenerate locally instead of committing
-analysis/outputs/
 
 # editor / tooling
 .vscode/

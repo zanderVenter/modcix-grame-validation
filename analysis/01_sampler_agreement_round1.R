@@ -27,9 +27,6 @@ source("src/config.R")
 TOLERANCE_DAYS <- 12 # matches TOLERANCE in geo-masc/modcix's evaluation.Rmd
 LOW_CONFIDENCE_LEVELS <- c("low", "very low")
 
-out_dir <- "analysis/outputs"
-dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
-
 # ---------------------------------------------------------------------------
 # Load data
 # ---------------------------------------------------------------------------
@@ -39,6 +36,11 @@ csv_path <- file.path(
   catalog$project_data$filepath, "data", "from_samplers",
   "public_greenet_collection - Sheet1.csv"
 )
+
+# Outputs go to PROJDIR/output, not into the repo - they contain contributor
+# names and are project data, not code (see README.md's "Data" section).
+out_dir <- file.path(catalog$project_data$filepath, "output", "sampler_agreement_round1")
+dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 raw <- read_csv(csv_path, col_types = cols(.default = "c"), na = character())
 

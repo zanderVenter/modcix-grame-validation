@@ -121,14 +121,18 @@ technically possible:
    pairwise interpreter-agreement metrics (on both the number of cuts and the timing
    of individual cuts, using the same 12-day matching tolerance as the original
    MODCiX accuracy assessment), and writes a `REFIDs to revisit` list plus supporting
-   CSVs/plots to `analysis/outputs/` (git-ignored - it contains contributor names, so
-   regenerate it locally rather than committing it).
+   CSVs/plots to `PROJDIR/output/sampler_agreement_round1/` - project data, not code,
+   so it's not part of this repo (see "Data" below).
 
 ## Data
 
-Large geospatial inputs/outputs (GRAME rasters, sample grids, sampler responses) live
-on the NINA project drive, not in this repository - `config/.env`'s `PROJDIR` points
-at that location locally. `.gitignore` excludes common geospatial formats accordingly.
+Large geospatial inputs, and all analysis outputs (GRAME rasters, sample grids,
+sampler responses, generated CSVs/plots) live on the NINA project drive under
+`PROJDIR`, not in this repository - `config/.env`'s `PROJDIR` points at that
+location locally (`PROJDIR/data/...` for inputs, `PROJDIR/output/...` for
+generated outputs). Scripts should write there rather than into the repo -
+`.gitignore` excludes `data/` and `output/` accordingly, on top of common
+geospatial formats.
 
 ## Citation
 
