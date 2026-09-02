@@ -15,8 +15,8 @@ collected by the consortium.
 | 2 | Equal-allocation stratified random sample of 10x10m GRAME pixels (strata = mowing-event count) | Done | [`gee_scripts/01_stratified_pixel_sampling.js`](gee_scripts/01_stratified_pixel_sampling.js) |
 | 3 | Ingest PlanetScope imagery (Planet Labs API) into a GEE asset | Done | [`scripts/planetscope_to_gee_ingestion.py`](scripts/planetscope_to_gee_ingestion.py) |
 | 4 | GEE sampling app + Cloud Function backend (Google Sheets store) | Done | [`gee_scripts/02_sampling_app.js`](gee_scripts/02_sampling_app.js), [`cloud_function/`](cloud_function/) |
-| 5 | Sampling campaign with the MODCiX consortium | Done | (campaign output, not in this repo) |
-| 6 | Quantify sampler agreement, flag points needing re-verification | Not started | |
+| 5 | Sampling campaign with the MODCiX consortium | Done (round 1) | (campaign output, not in this repo) |
+| 6 | Quantify sampler agreement, flag points needing re-verification | Round 1 analysed | [`analysis/01_sampler_agreement_round1.R`](analysis/01_sampler_agreement_round1.R) |
 | 7 | Consolidate final reference sample | Not started | |
 | 8 | Quantify GRAME accuracy (mowing-event counts + temporal detection) vs. both this PlanetScope sample and the original MODCiX sample; write up as a paper | Not started | |
 
@@ -24,11 +24,12 @@ collected by the consortium.
 
 ```
 config/           .env template + committed catalog.yaml (see "Secrets" below)
-src/               shared config-loading code (used by the notebook and scripts/)
+src/               shared config-loading code (Python and R; used across notebooks/, scripts/, analysis/)
 notebooks/         sample design (2km grid) and GRAME product ingestion (WEkEO -> GEE)
 scripts/           standalone PlanetScope -> GEE ingestion script (Planet API search/order/relay)
 gee_scripts/       Google Earth Engine Code Editor scripts (pixel sampling, sampling app)
 cloud_function/    GCP Cloud Function backing the sampling app (Sheets read/write proxy)
+analysis/          post-campaign analysis of sampling-app output (R)
 ```
 
 ## Setup
@@ -62,6 +63,8 @@ technically possible:
   `src/config.py`'s `load_catalog()`. Never hardcode a key or project ID in a
   `.py` file or notebook cell - add it to `config/template.env` and reference it
   through `catalog[...]` instead.
+- **R (`analysis/`)**: same pattern, via `src/config.R`'s `load_catalog()`. Run R
+  scripts from the repo root so its relative `config/...` paths resolve.
 - **GEE Code Editor scripts (`gee_scripts/*.js`)**: GEE Apps run client-side with no
   environment-variable support, so each file has a `CONFIG` block of `var` constants
   near the top (GEE asset root, Cloud Function URL, Sheet name, ...). Edit those
@@ -107,6 +110,19 @@ technically possible:
    [`gee_scripts/02_sampling_app.js`](gee_scripts/02_sampling_app.js) into the Code
    Editor, edit its `CONFIG` block to point at your GEE assets and deployed Cloud
    Function, and either run it directly or publish it as a GEE App.
+5. **Sampler agreement** - once a round of the sampling campaign's Google Sheet is
+   exported to CSV (see `PROJDIR`'s `data/from_samplers/` layout in
+   [`analysis/01_sampler_agreement_round1.R`](analysis/01_sampler_agreement_round1.R)),
+   run:
+   ```bash
+   Rscript analysis/01_sampler_agreement_round1.R
+   ```
+   from the repo root. Prints summary statistics, the low-confidence-event list, and
+   pairwise interpreter-agreement metrics (on both the number of cuts and the timing
+   of individual cuts, using the same 12-day matching tolerance as the original
+   MODCiX accuracy assessment), and writes a `REFIDs to revisit` list plus supporting
+   CSVs/plots to `analysis/outputs/` (git-ignored - it contains contributor names, so
+   regenerate it locally rather than committing it).
 
 ## Data
 

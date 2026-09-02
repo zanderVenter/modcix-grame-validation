@@ -18,3 +18,7 @@ dependencies:
       - google-cloud-storage
       - google-api-python-client
       - hda
+  # R (analysis/ scripts, e.g. sampler-agreement analysis)
+  - r-base
+  - r-tidyverse
+  - r-yaml
