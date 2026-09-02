@@ -67,14 +67,18 @@ samples <- raw %>%
   rowwise() %>%
   mutate(n_events = sum(!is.na(c_across(all_of(mow_cols))))) %>%
   ungroup()
-
-# Keep one row per REFID x sampler: if the same person submitted a REFID more
-# than once (216 cases in round 1), keep their most recent session only -
-# these are not independent second opinions.
+  
+# Collapse only genuine duplicate submissions - same REFID, same sampler,
+# same session_id (an app double-POST/retry: 49 cases in round 1, always
+# 0 seconds apart). A same-sampler resubmission from a *different* session
+# is kept: in round 1 every such case was at least ~17 minutes apart (up to
+# 20 days), a clean gap from the 0-second duplicates with nothing in
+# between - so it's a genuine second, independent look at the same point by
+# the same person, not a network retry, and is a valid (if intra-rater
+# rather than inter-rater) agreement data point. See "same_sampler" in the
+# pairwise output below.
 samples_dedup <- samples %>%
-  group_by(REFID, sampler_key) %>%
-  slice_max(order_by = session_id, n = 1, with_ties = FALSE) %>%
-  ungroup()
+  distinct(REFID, sampler_key, session_id, .keep_all = TRUE)
 
 # Event-level long table (one row per labelled mowing event), used for the
 # low-confidence flag and the timing-agreement matching.
@@ -210,33 +214,36 @@ match_events <- function(dates_a, dates_b, tolerance = TOLERANCE_DAYS) {
   tp
 }
 
+# Keyed by session_id too (not just REFID+sampler) - a sampler can now have
+# more than one retained session for the same REFID (see samples_dedup above).
 dates_lookup <- event_long %>%
-  mutate(key = paste(REFID, sampler_key, sep = "||")) %>%
+  mutate(key = paste(REFID, sampler_key, session_id, sep = "||")) %>%
   group_by(key) %>%
   summarise(dates = list(sort(date)), .groups = "drop") %>%
   { setNames(.$dates, .$key) }
 
-get_dates <- function(refid, key) {
-  dates_lookup[[paste(refid, key, sep = "||")]] %||% as.Date(character())
+get_dates <- function(refid, key, session) {
+  dates_lookup[[paste(refid, key, session, sep = "||")]] %||% as.Date(character())
 }
 
 meta <- samples_dedup %>%
-  select(REFID, sampler, sampler_key, processed, is_grassland, n_events)
+  select(REFID, sampler, sampler_key, session_id, processed, is_grassland, n_events)
 
+# >=2 *retained sessions* for the REFID - could be 2 different samplers, or
+# the same sampler on 2 separate occasions (see samples_dedup).
 multi_refids <- meta %>%
   group_by(REFID) %>%
-  filter(n_distinct(sampler_key) >= 2) %>%
+  filter(n() >= 2) %>%
   group_split()
 
-cat("REFIDs with >=2 distinct samplers (eligible for agreement analysis):",
+cat("REFIDs with >=2 independent sessions (eligible for agreement analysis):",
     length(multi_refids), "\n")
 
 pairs_list <- map(multi_refids, function(sub) {
-  keys <- unique(sub$sampler_key)
-  combos <- combn(keys, 2, simplify = FALSE)
+  combos <- combn(seq_len(nrow(sub)), 2, simplify = FALSE)
   map_dfr(combos, function(cb) {
-    a <- sub %>% filter(sampler_key == cb[1]) %>% slice(1)
-    b <- sub %>% filter(sampler_key == cb[2]) %>% slice(1)
+    a <- sub[cb[1], ]
+    b <- sub[cb[2], ]
 
     both_valid <- isTRUE(a$processed) && isTRUE(b$processed) &&
       identical(a$is_grassland, "Yes") && identical(b$is_grassland, "Yes")
@@ -244,6 +251,11 @@ pairs_list <- map(multi_refids, function(sub) {
     row <- tibble(
       REFID = a$REFID,
       sampler_a = a$sampler, sampler_b = b$sampler,
+      # same sampler, different (non-duplicate) session - an intra-rater
+      # repeat rather than a second independent opinion. Kept in the same
+      # agreement analysis per request, but flagged so it can be filtered
+      # separately if inter-rater-only agreement is wanted.
+      same_sampler = a$sampler_key == b$sampler_key,
       grassland_a = a$is_grassland, grassland_b = b$is_grassland,
       grassland_agree = identical(a$is_grassland, b$is_grassland),
       comparable = both_valid,
@@ -253,8 +265,8 @@ pairs_list <- map(multi_refids, function(sub) {
     )
 
     if (both_valid) {
-      da <- get_dates(a$REFID, cb[1])
-      db <- get_dates(a$REFID, cb[2])
+      da <- get_dates(a$REFID, a$sampler_key, a$session_id)
+      db <- get_dates(b$REFID, b$sampler_key, b$session_id)
       # NB: name these distinctly from row's own columns (n_events_a, tp, ...) -
       # mutate() resolves a same-named RHS against the existing column first,
       # not this enclosing scope, which would silently freeze it at its NA placeholder.
@@ -274,7 +286,9 @@ pairs_list <- map(multi_refids, function(sub) {
 pairs_df <- bind_rows(pairs_list)
 write_csv(pairs_df, file.path(out_dir, "sampler_pair_agreement.csv"))
 
-cat("Sampler pairs compared:", nrow(pairs_df), "\n")
+cat("Sampler pairs compared:", nrow(pairs_df),
+    sprintf("(%d inter-rater, %d intra-rater/same-sampler repeats)\n",
+            sum(!pairs_df$same_sampler), sum(pairs_df$same_sampler)))
 cat("  - grassland classification agreement:",
     sprintf("%.1f%%", 100 * mean(pairs_df$grassland_agree)), "\n")
 
