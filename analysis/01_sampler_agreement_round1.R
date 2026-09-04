@@ -47,6 +47,36 @@ raw <- read_csv(csv_path, col_types = cols(.default = "c"), na = character())
 mow_cols <- paste0("mow_", 1:7)
 conf_cols <- paste0("mow_", 1:7, "_conf")
 
+# The app's cloud-function relay writes to Sheets with valueInputOption =
+# USER_ENTERED (cloud_function/main.py), which lets Sheets auto-parse
+# "YYYY-MM-dd" strings into its own date type. Cells appended this way don't
+# reliably inherit a "Date" number format from the column, so a fraction of
+# them display/export as the raw Sheets/Excel serial day-count instead of the
+# ISO string (epoch 1899-12-30, same as Excel). Confirmed against the raw CSV
+# on 2026-09-04: ~2060 of 3204 mow_* date cells were bare serial numbers, of
+# which ~2057 decode to plausible 2021 dates - real data, not corruption, and
+# recoverable as long as this parsing step exists. A handful (~10) are
+# genuine user-entry typos (e.g. "3032-06-21", "2026-07-14") that decode
+# outside 2021 or don't parse at all - left as NA/flagged rather than guessed.
+parse_mow_date <- function(x) {
+  x <- na_if(str_trim(x), "")
+  is_serial <- !is.na(x) & str_detect(x, "^[0-9]{4,6}$")
+  out <- as.Date(rep(NA_character_, length(x)))
+  out[!is_serial] <- suppressWarnings(as.Date(x[!is_serial]))
+  out[is_serial] <- as.Date(as.numeric(x[is_serial]), origin = "1899-12-30")
+  n_unparsed <- sum(!is.na(x) & is.na(out))
+  if (n_unparsed > 0) {
+    warning(n_unparsed, " mow_* date value(s) could not be parsed and are now NA - see raw values: ",
+            paste(unique(x[!is.na(x) & is.na(out)]), collapse = ", "))
+  }
+  n_outside_2021 <- sum(!is.na(out) & format(out, "%Y") != "2021")
+  if (n_outside_2021 > 0) {
+    warning(n_outside_2021, " mow_* date(s) parsed outside 2021 (likely user-entry error): ",
+            paste(format(out[!is.na(out) & format(out, "%Y") != "2021"]), collapse = ", "))
+  }
+  out
+}
+
 samples <- raw %>%
   mutate(
     sampler = str_trim(selectedName),
@@ -59,7 +89,7 @@ samples <- raw %>%
     is_processed = str_trim(is_processed),
     processed = is_processed == "Yes",
     skipped = is_processed == "No - skipping to next",
-    across(all_of(mow_cols), ~ suppressWarnings(as.Date(na_if(.x, "")))),
+    across(all_of(mow_cols), parse_mow_date),
     # the confidence dropdown's unselected placeholder text - treat as missing
     across(all_of(conf_cols), ~ na_if(na_if(str_trim(.x), ""), "-confidence-")),
     overall_confidence = suppressWarnings(as.numeric(confidence))
